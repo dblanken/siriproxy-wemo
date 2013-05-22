@@ -24,7 +24,12 @@ class SiriProxy::Plugin::Wemo < SiriProxy::Plugin
     device_location = nil
 
     SimpleUpnp::Discovery.find do |device|
-      device_json = device.to_json(include_location_details)
+      begin
+        device_json = device.to_json(include_location_details)
+      rescue
+        retry
+      end
+      
       if device_json['root']
         if device_json['root']['device']
           if device_json['root']['device']['friendlyName']
@@ -48,8 +53,12 @@ class SiriProxy::Plugin::Wemo < SiriProxy::Plugin
       c.headers["Content-type"] = 'text/xml; charset="utf-8"'
       c.headers["SOAPACTION"] = "\"urn:Belkin:service:basicevent:1#SetBinaryState\""
       c.verbose = false
-      c.http_post("<?xml version='1.0' encoding='utf-8'?><s:Envelope xmlns:s='http://schemas.xmlsoap.org/soap/envelope/' s:encodingStyle='http://schemas.xmlsoap.org/soap/encoding/'><s:Body><u:SetBinaryState xmlns:u='urn:Belkin:service:basicevent:1'><BinaryState>#{signal}</BinaryState></u:SetBinaryState></s:Body></s:Envelope>")
-      c.perform
+      begin
+        c.http_post("<?xml version='1.0' encoding='utf-8'?><s:Envelope xmlns:s='http://schemas.xmlsoap.org/soap/envelope/' s:encodingStyle='http://schemas.xmlsoap.org/soap/encoding/'><s:Body><u:SetBinaryState xmlns:u='urn:Belkin:service:basicevent:1'><BinaryState>#{signal}</BinaryState></u:SetBinaryState></s:Body></s:Envelope>")
+        c.perform
+      rescue Curb::Err
+        say "I can't access the #{wemo} at this time"
+      end
       request_completed
     else
       say "I can't find the #{wemo}"

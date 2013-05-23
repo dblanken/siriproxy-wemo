@@ -27,7 +27,7 @@ class SiriProxy::Plugin::Wemo < SiriProxy::Plugin
       begin
         device_json = device.to_json(include_location_details)
       rescue
-        retry
+        next
       end
       
       if device_json['root']
